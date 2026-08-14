@@ -17,12 +17,14 @@ renormalised by the sum of their weights — so missing factors don't
 mechanically deflate every score by the same fixed amount.
 """
 
-import math
 from dataclasses import dataclass
 
 from app.models.job import Job
 from app.models.user import UserSettings
 from app.services.dedup import title_similarity
+from app.services.embeddings import cosine_similarity
+
+SKILL_OVERLAP_NORM_CAP = 8
 
 WEIGHTS = {
     "embedding_similarity": 0.40,
@@ -39,15 +41,6 @@ class MatchScoreResult:
     factors: dict
 
 
-def _cosine_similarity(a: list[float], b: list[float]) -> float:
-    dot = sum(x * y for x, y in zip(a, b))
-    norm_a = math.sqrt(sum(x * x for x in a))
-    norm_b = math.sqrt(sum(x * x for x in b))
-    if norm_a == 0 or norm_b == 0:
-        return 0.0
-    return dot / (norm_a * norm_b)
-
-
 def compute_match_score(
     job: Job,
     candidate_embedding: list[float],
@@ -57,7 +50,7 @@ def compute_match_score(
     factors: dict[str, dict] = {}
 
     if job.jd_embedding is not None:
-        similarity = _cosine_similarity(candidate_embedding, list(job.jd_embedding))
+        similarity = cosine_similarity(candidate_embedding, list(job.jd_embedding))
         factors["embedding_similarity"] = {"evaluated": True, "value": similarity}
     else:
         factors["embedding_similarity"] = {"evaluated": False}
@@ -72,9 +65,17 @@ def compute_match_score(
     if confirmed_skills:
         jd_lower = job.jd_text.lower()
         matched = [s for s in confirmed_skills if s.lower() in jd_lower]
+        # Normalise by min(len(confirmed_skills), SKILL_OVERLAP_NORM_CAP), not
+        # raw len(confirmed_skills) — a JD realistically only ever mentions a
+        # handful of skills regardless of how many a candidate has confirmed,
+        # so dividing by a large total (e.g. 72 confirmed skills) structurally
+        # suppresses this factor toward ~0 even for a genuinely strong match.
+        # Found via real data: a candidate with 72 confirmed skills scored
+        # 0.04 on a JD that matched 3 of their top skills.
+        denominator = min(len(confirmed_skills), SKILL_OVERLAP_NORM_CAP)
         factors["skill_overlap"] = {
             "evaluated": True,
-            "value": len(matched) / len(confirmed_skills),
+            "value": min(1.0, len(matched) / denominator),
             "matched_skills": matched,
         }
     else:

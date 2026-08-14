@@ -4,6 +4,8 @@ swapping providers later means changing this module only, callers are
 unaffected.
 """
 
+import math
+
 import voyageai
 
 from app.config import settings
@@ -32,3 +34,12 @@ def embed_query(text: str) -> list[float]:
     client = _get_client()
     result = client.embed([text], model=settings.embedding_model, input_type="query")
     return result.embeddings[0]
+
+
+def cosine_similarity(a: list[float], b: list[float]) -> float:
+    dot = sum(x * y for x, y in zip(a, b))
+    norm_a = math.sqrt(sum(x * x for x in a))
+    norm_b = math.sqrt(sum(x * x for x in b))
+    if norm_a == 0 or norm_b == 0:
+        return 0.0
+    return dot / (norm_a * norm_b)

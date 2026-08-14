@@ -1,7 +1,16 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.routers import answer_bank, auth, facts, jobs, matching, resumes, settings
+from app.routers import (
+    answer_bank,
+    auth,
+    facts,
+    field_resolution,
+    jobs,
+    matching,
+    resumes,
+    settings,
+)
 
 app = FastAPI(title="ApplAI core-api", version="0.1.0")
 
@@ -20,6 +29,7 @@ app.include_router(jobs.router)
 app.include_router(settings.router)
 app.include_router(answer_bank.router)
 app.include_router(matching.router)
+app.include_router(field_resolution.router)
 
 
 @app.get("/health")

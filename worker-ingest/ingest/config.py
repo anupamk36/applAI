@@ -13,6 +13,11 @@ class Settings(BaseSettings):
         "stripe": "Stripe",
         "airbnb": "Airbnb",
         "coinbase": "Coinbase",
+        # Discord stays on Greenhouse's default unbranded template (no
+        # custom-domain redirect) — added for Phase 1.6's apply-runner
+        # testing, since it's the only board type our Tier 1 adapter
+        # (built against real Discord DOM research) actually matches.
+        "discord": "Discord",
     }
     lever_accounts: dict[str, str] = {
         "palantir": "Palantir",

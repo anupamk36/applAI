@@ -15,5 +15,11 @@ class Settings(BaseSettings):
     embedding_model: str = "voyage-3"
     embedding_dimensions: int = 1024
 
+    anthropic_api_key: str = ""
+    # Small/fast per spec §7.1's task-routing table — field resolution is
+    # short-context, JSON-out, high call volume. Never route this to a
+    # large model (spec's own warning, §7.1).
+    field_resolution_model: str = "claude-haiku-4-5-20251001"
+
 
 settings = Settings()
